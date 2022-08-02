@@ -99,5 +99,38 @@ impl Chain {
             count: 0,
             transactions: vec![],
         };
+
+        block.transactions.push(reward_trans);
+        block.transactions.append(&mut self.curr_transaction);
+        block.count = block.transaction.len() as u32;
+        block.header.merkle = Chain::get_merkle(block.transactions.clone());
+        Chain::proof_of_work(&mut block.header);
+
+        println!("{:?}", &block);
+        self.chain.push(block);
+        true
+    }
+
+    fn get_merkle(curr_transaction: Vec<Transaction>) -> String {
+        let mut merkle = Vec::new();
+
+        for t in &curr_transaction {
+            let hash = Chain::hash(t);
+            merkle.push(hash);
+        }
+
+        if merkle.len() % 2 == 1 {
+            let last = merkle.last().cloned().unwrap();
+            merkle.push(last);
+        }
+
+        while merkle.len() > 1 {
+            let mut h1 = merkle.remove(0);
+            let mut h2 = merkle.remove(0);
+            h1.push_str(&mut h2);
+            let nh = Chain::hash(&h1);
+            merkle.push(nh);
+        }
+        merkle.pop().unwrap()
     }
 }
