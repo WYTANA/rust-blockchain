@@ -1,10 +1,8 @@
-extern crate serde;
-extern crate serde_json;
-extern crate sha2;
-extern crate time;
-
+use serde_derive::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use std::fmt::Write;
+
+use chrono::prelude::*;
 
 #[derive(Serialize, Clone, Debug)]
 struct Transaction {
@@ -29,7 +27,6 @@ pub struct Block {
     transactions: Vec<Transaction>,
 }
 
-// #[derive(Serialize, Debug)]
 pub struct Chain {
     chain: Vec<Block>,
     curr_transaction: Vec<Transaction>,
@@ -47,6 +44,7 @@ impl Chain {
             miner_addr,
             reward: 100.0,
         };
+
         chain.generate_new_block();
         chain
     }
@@ -81,10 +79,10 @@ impl Chain {
 
     pub fn generate_new_block(&mut self) -> bool {
         let header = Blockheader {
-            timestamp: time::now().to_timespec().sec,
+            timestamp: Utc::now().timestamp_millis(),
             nonce: 0,
             previous_hash: self.last_hash(),
-            // merkle: String::from_utf8(vec![48; 64]).unwrap(),
+            merkle: String::new(),
             difficulty: self.difficulty,
         };
 
@@ -102,7 +100,7 @@ impl Chain {
 
         block.transactions.push(reward_trans);
         block.transactions.append(&mut self.curr_transaction);
-        block.count = block.transaction.len() as u32;
+        block.count = block.transactions.len() as u32;
         block.header.merkle = Chain::get_merkle(block.transactions.clone());
         Chain::proof_of_work(&mut block.header);
 
@@ -132,5 +130,44 @@ impl Chain {
             merkle.push(nh);
         }
         merkle.pop().unwrap()
+    }
+
+    pub fn proof_of_work(header: &mut Blockheader) {
+        loop {
+            let hash = Chain::hash(header);
+            let slice = &hash[..header.difficulty as usize];
+            match slice.parse::<u32>() {
+                Ok(val) => {
+                    if val != 0 {
+                        header.nonce += 1;
+                    } else {
+                        println!("Block hash: {}", hash);
+                        break;
+                    }
+                }
+                Err(_) => {
+                    header.nonce += 1;
+                    continue;
+                }
+            };
+        }
+    }
+
+    pub fn hash<T: serde::Serialize>(item: &T) -> String {
+        let input = serde_json::to_string(&item).unwrap();
+        let mut hasher = Sha256::new();
+        hasher.update(input.as_bytes());
+        let res = hasher.finalize();
+        let vec_res = res.to_vec();
+
+        Chain::hex_to_string(vec_res.as_slice())
+    }
+
+    pub fn hex_to_string(vec_res: &[u8]) -> String {
+        let mut s = String::new();
+        for b in vec_res {
+            write!(&mut s, "{:x}", b).expect("unable to write");
+        }
+        s
     }
 }
