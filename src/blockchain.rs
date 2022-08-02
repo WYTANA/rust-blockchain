@@ -1,4 +1,4 @@
-use serde_derive::{Deserialize, Serialize};
+use serde_derive::Serialize;
 use sha2::{Digest, Sha256};
 use std::fmt::Write;
 
@@ -104,7 +104,7 @@ impl Chain {
         block.header.merkle = Chain::get_merkle(block.transactions.clone());
         Chain::proof_of_work(&mut block.header);
 
-        println!("{:?}", &block);
+        println!("{:#?}", &block);
         self.chain.push(block);
         true
     }

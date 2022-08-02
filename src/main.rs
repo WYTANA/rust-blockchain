@@ -12,7 +12,7 @@ fn main() {
     print!("input a miner address: ");
     io::stdout().flush();
     io::stdin().read_line(&mut miner_addr);
-    print!("Difficulty: ");
+    print!("Difficulty (1-4): ");
     io::stdout().flush();
     io::stdin().read_line(&mut difficulty);
     let diff = difficulty
